@@ -145,6 +145,7 @@ WITH base AS (
         p.clean_name,
         p.team_id,
         p.points,
+        AVG(p.points) OVER (PARTITION BY player_id) AS full_season_ppg,
 
         -- opponent info (NEW)
         t.team_abbreviation AS opp_team_abbreviation,
@@ -238,6 +239,7 @@ SELECT
     player_name,
     clean_name,
     game_date,
+    full_season_ppg,
 
     opp_team_abbreviation,
     opp_team_name,
