@@ -110,94 +110,104 @@ While streaks alone show limited explanatory power, several natural extensions c
 
 A key takeaway from this project is that intuitively appealing narratives do not always translate into statistically robust signals. Negative results, when obtained through careful methodology and formal inference, are informative and valuable. This study demonstrates how exploratory insights can—and should—be validated through disciplined statistical reasoning.
 
-## Technical Implementation
+## Technical Approach (Data Science Focus)
 
-This project was implemented using a modular, notebook-driven data science workflow, with an emphasis on reproducibility, correctness, and statistical rigor.
-
-### Data Processing and Feature Engineering
-
-- **Data Source:**  
-  Game-level NBA player statistics were ingested from structured data tables and processed using SQL and Python.
-
-- **SQL-Based Feature Construction:**  
-  SQL was used to construct game-level features efficiently, including:
-  - player and game identifiers
-  - rolling season averages
-  - initial streak identifiers
-  - filtering to high-usage players  
-  Window functions were leveraged to compute rolling statistics and to ensure consistent season-level baselines prior to analysis.
-
-- **Temporal Integrity:**  
-  All streak-related features were constructed using **lagged information only**, ensuring that streak direction and streak length reflected the player’s state *entering* each game. This prevented outcome leakage and preserved causal ordering in the analysis.
+This project follows a standard data science workflow, with a deliberate emphasis on exploratory analysis, statistical inference, and uncertainty-aware conclusions rather than predictive modeling. The technical implementation prioritizes correctness, interpretability, and methodological rigor.
 
 ---
 
-### Python Analytics Stack
+### Data Preparation and Feature Construction
 
-The core analysis was conducted in Python using the following libraries:
+Game-level NBA player data were processed using a combination of SQL and Python. SQL was used for initial data extraction and feature construction, including:
 
-- **pandas** for data manipulation, grouping, and feature annotation
-- **NumPy** for vectorized numerical operations and resampling
-- **SciPy** for classical statistical tests (e.g., one-sample t-tests)
-- **matplotlib / seaborn** for exploratory and explanatory visualizations
+- player and game identifiers
+- rolling season-level scoring baselines
+- preliminary streak indicators
+- filtering to high-usage players to reduce variance from low-sample noise
 
-Player-level baselines were computed using `groupby` and `transform` operations, enabling efficient annotation of game-level data while preserving row-level granularity.
+Window functions were leveraged to compute rolling statistics and to ensure consistent, season-aware baselines. All features were constructed at the game level prior to aggregation to preserve flexibility in downstream analysis.
+
+A key design decision was enforcing **temporal integrity**: all streak-related features (streak direction and streak length) were derived exclusively from *prior* games. Lagged transformations were applied explicitly to prevent outcome leakage and ensure that streak state reflected information available before each game outcome.
 
 ---
 
-### Statistical Inference
+### Analytical Stack
 
-Formal hypothesis testing was implemented at the **player level**, rather than the game level, to avoid inflating sample sizes and to properly account for player heterogeneity.
+The core analysis was conducted in Python using:
 
-Key inference techniques included:
+- **pandas** for data manipulation, grouping, and player-level aggregation
+- **NumPy** for numerical operations and resampling procedures
+- **SciPy** for classical hypothesis testing
+- **matplotlib / seaborn** for diagnostic and explanatory visualization
+
+Player-level baselines were computed using `groupby` and `transform` operations, enabling per-row annotation while preserving individual-level structure for later aggregation.
+
+---
+
+### Statistical Inference Design
+
+Formal inference was conducted at the **player level**, not the game level, to avoid inflating effective sample sizes and to respect independence assumptions.
+
+For each player, we computed a deviation metric defined as the difference between streak-conditioned over-performance probability and the player’s own baseline probability. This produced a single interpretable statistic per player, which served as the unit of analysis for hypothesis testing.
+
+Two complementary inference approaches were used:
 
 - **One-sample t-tests**  
-  Used to evaluate whether the mean player-level deviation from baseline differed from zero under standard normality assumptions.
+  Applied to player-level deviations to test whether the mean deviation differed from zero under standard normality assumptions.
 
 - **Bootstrap confidence intervals**  
-  Implemented via repeated resampling of player-level deviations to estimate uncertainty in the mean without strong distributional assumptions.
+  Implemented via repeated resampling of player-level deviations to estimate uncertainty in the mean without relying on parametric distributional assumptions.
 
-- **Stratified analyses**  
-  Conditional tests by streak direction and streak length were conducted using player-level aggregation to preserve independence across observations.
+This dual approach allowed for both classical hypothesis testing and assumption-light uncertainty estimation, strengthening confidence in the results when both methods agreed.
 
-All hypothesis tests were framed to quantify uncertainty and assess statistical distinguishability from baseline behavior rather than to establish causality.
+---
+
+### Stratified Analysis and Heterogeneity Checks
+
+To explore whether streak effects varied by context, additional stratified analyses were conducted by streak direction (over vs. under) and streak length. Player-level aggregation was preserved within each bin to maintain valid inference.
+
+These stratified tests were interpreted as **exploratory conditional analyses**, designed to detect structured heterogeneity rather than to serve as primary confirmatory tests.
 
 ---
 
 ### Visualization and Diagnostics
 
-Visualizations were designed primarily for **interpretability and validation**, rather than pattern discovery. Key plots included:
+Visualizations were used primarily for validation and communication rather than discovery. Key plots included:
 
-- Distribution plots of player-level deviations from baseline
-- Boxplots comparing streak-conditioned effects across bins
-- Scatter plots examining heterogeneity and baseline dependence
+- distributions of player-level deviations from baseline
+- boxplots of deviation by streak direction and length
+- scatter plots examining heterogeneity relative to baseline performance
 
-Reference lines and consistent scaling were used to facilitate comparison across conditions.
+All visualizations were constructed with consistent scaling and explicit reference lines to aid interpretability and prevent overemphasis of small effects.
 
 ---
 
 ### Reproducibility and Organization
 
-- The analysis is organized into sequential notebooks corresponding to:
-  1. Data extraction and processing
-  2. Exploratory analysis
-  3. Formal inference and hypothesis testing
-- Each notebook is designed to run independently after data preparation.
-- Intermediate datasets are stored explicitly to support reproducibility and inspection.
+The analysis is organized into sequential notebooks corresponding to major stages of the data science lifecycle:
+
+1. Data extraction and preprocessing  
+2. Exploratory data analysis  
+3. Formal inference and hypothesis testing  
+
+Each notebook is designed to be readable, modular, and reproducible, with intermediate datasets stored explicitly to support inspection and iteration.
 
 ---
 
-### Design Philosophy
+### Methodological Principles
 
-Throughout the project, the following principles guided implementation:
+Several core data science principles guided the technical implementation:
 
-- **Baseline-first analysis:**  
-  All comparisons were anchored to player-specific baselines to control for skill and usage differences.
+- **Baseline-centered analysis:**  
+  All comparisons were anchored to player-specific baselines to control for skill, role, and usage differences.
 
 - **Aggregation before inference:**  
-  Player-level aggregation was used prior to hypothesis testing to maintain valid statistical assumptions.
+  Player-level aggregation was performed prior to hypothesis testing to maintain statistical validity.
 
-- **Separation of concerns:**  
-  Exploratory analysis, formal inference, and visualization were treated as distinct stages, each with different goals and standards of evidence.
+- **Separation of exploration and inference:**  
+  Exploratory analysis was treated as hypothesis-generating, while formal testing was reserved for uncertainty-aware evaluation.
 
-This technical approach ensures that conclusions are driven by statistically defensible analysis rather than artifacts of data processing or aggregation.
+- **Interpretability over complexity:**  
+  Simple, transparent statistical methods were favored to support clear conclusions and avoid overfitting narratives to noise.
+
+This approach ensures that conclusions reflect genuine signal (or the absence thereof) rather than artifacts of data processing or aggregation.
